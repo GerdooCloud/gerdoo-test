@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gerdoo Test</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 40px auto; padding: 0 16px; }
+    form { display: flex; gap: 8px; }
+    input { flex: 1; padding: 8px; }
+    li { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #ddd; }
+    #status { color: #666; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Gerdoo Test Notes</h1>
+  <p id="status">Checking...</p>
+  <form id="form">
+    <input id="text" placeholder="Write a note" required>
+    <button>Add</button>
+  </form>
+  <ul id="list"></ul>
+
+  <script>
+    const list = document.getElementById('list');
+
+    async function load() {
+      const notes = await fetch('/api/notes').then(r => r.json());
+      list.innerHTML = '';
+      for (const n of notes) {
+        const li = document.createElement('li');
+        li.textContent = n.text;
+        const del = document.createElement('button');
+        del.textContent = 'Delete';
+        del.onclick = async () => { await fetch('/api/notes/' + n.id, { method: 'DELETE' }); load(); };
+        li.appendChild(del);
+        list.appendChild(li);
+      }
+    }
+
+    document.getElementById('form').onsubmit = async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('text');
+      await fetch('/api/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: input.value })
+      });
+      input.value = '';
+      load();
+    };
+
+    fetch('/health').then(r => r.json()).then(h => {
+      document.getElementById('status').textContent = 'Database: ' + h.db;
+    });
+    load();
+  </script>
+</body>
+</html>
